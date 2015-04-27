@@ -1,4 +1,5 @@
 require 'fb_graph'
+require 'redis'
 require 'open-uri'
 require 'json'
 
@@ -7,7 +8,11 @@ class NusWhispersBot
   ACCESS_TOKEN  = ENV['PAGE_ACCESS_TOKEN']
   HASHTAG_REGEX = /#[[:alnum:]_]+/
   NUMERIC_TAG_REGEX = /\d+$/
-  MAX_FETCH = 5
+  MAX_FETCH = 250
+
+  def redis
+    @_redis ||= Redis.new
+  end
 
   def whispers_page
     @whispers_page ||= FbGraph::Page.fetch('nuswhispers', access_token: ACCESS_TOKEN)
@@ -19,7 +24,7 @@ class NusWhispersBot
 
   def parse_post(post)
 
-    content, footer = post.split(/\n-\n #/) #'#1234 #1217 #tag #abc', 'a'
+    content, footer = post.split(/\n-\n #/)
 
     if content && footer
       hashtags = content.scan(HASHTAG_REGEX)
@@ -78,12 +83,15 @@ class NusWhispersBot
 
 
   def run
-    posts = whispers_page.posts(limit: MAX_FETCH)
+    last_ran_timestamp = redis.get('nwb_last_ran_timestamp') || (Time.now - 1.month).to_i
+    posts = whispers_page.posts(limit: MAX_FETCH, since: last_ran_timestamp)
 
-    puts "Parsing #{posts.count} posts.."
+    puts "Parsing #{posts.count} posts from #{last_ran_timestamp}.."
     posts.each do |post|
       parse_post(post.message)
     end
+  ensure
+    redis.set('nwb_last_ran_timestamp', Time.now.utc.to_i)
   end
 
 end
