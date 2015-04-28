@@ -16,7 +16,7 @@ class NusWhispersBot
   end
 
   def whispers_page
-    @whispers_page ||= FbGraph::Page.fetch('nuswhispers', access_token: ACCESS_TOKEN)
+    @_whispers_page ||= FbGraph::Page.fetch('nuswhispers', access_token: ACCESS_TOKEN)
   end
 
   def bot_page
@@ -24,6 +24,8 @@ class NusWhispersBot
   end
 
   def parse_post(post)
+
+    return if redis.get("nwb_commented_#{post.identifier}")
 
     content, footer = post.message.split(/\n-\n #/)
 
@@ -76,6 +78,7 @@ class NusWhispersBot
       unless comment.empty?
         comment << "For queries, complains, bug reports: nuswhispersbot@gmail.com"
         post.comment!(message: comment)
+        redis.set("nwb_commented_#{post.identifier}", Time.now.utc.to_i)
         puts "Commented on post #{post.identifier}."
       end
 
@@ -93,7 +96,7 @@ class NusWhispersBot
     posts.each do |post|
       parse_post(post)
     end
-  ensure
+    
     redis.set(REDIS_KEY, current_timestamp)
   end
 
