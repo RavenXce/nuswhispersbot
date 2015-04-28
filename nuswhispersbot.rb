@@ -8,8 +8,12 @@ class NusWhispersBot
   REDIS_KEY = ENV['REDIS_KEY'] || 'nwb_last_ran_timestamp'
   ACCESS_TOKEN  = ENV['PAGE_ACCESS_TOKEN']
   MAX_FETCH = ENV['MAX_FETCH'] || 250
+  MAX_POST_LENGTH = ENV['MAX_POST_LENGTH'] || 1000
+  MAX_COMMENT_LENGTH = 8000
   HASHTAG_REGEX = /#[[:alnum:]_]+/
   NUMERIC_TAG_REGEX = /\d+$/
+
+  private
 
   def redis
     @_redis ||= Redis.new
@@ -32,7 +36,7 @@ class NusWhispersBot
     if content && footer
       hashtags = content.scan(HASHTAG_REGEX)
 
-      results = hashtags.map do |tag|
+      results = hashtags.uniq.map do |tag|
         tag[0] = '' # remove hash (#) character
 
         if tag.match(NUMERIC_TAG_REGEX)
@@ -65,32 +69,59 @@ class NusWhispersBot
 
       results = results.group_by { |x| x[:type] }
 
-      comment = ""
-      if results['confession']
-        comment << "\nThe following confessions were referenced in this post:\n=="
-        results['confession'].each do |r|
-          comment << "\n\##{r[:tag]}: #{r[:content]}\n-- Facebook link: #{r[:fb_link]}\n-- Original link: #{r[:link]}\n"
-        end
-        comment << "\n"
-      end
-      if results['tag']
-        comment << "\nThe following tags were found in this post:\n=="
-        results['tag'].each do |r|
-          comment << "\n\##{r[:tag]}: #{r[:link]}"
-        end
-        comment << "\n==\n"
-      end
+      comment = generate_comment(results)
+
       unless comment.empty?
         comment << "For queries, complains, bug reports: nuswhispersbot@gmail.com"
-        post.comment!(message: comment)
-        redis.set("nwb_commented_#{post.identifier}", Time.now.utc.to_i)
-        puts "Commented on post #{post.identifier}."
+        begin
+          post.comment!(message: comment)
+        rescue FbGraph::Unauthorized => e
+          puts "Failed to comment on post #{post.identifier}. Comment probably too long: #{comment.length}."
+        else
+          redis.set("nwb_commented_#{post.identifier}", Time.now.utc.to_i)
+          puts "Commented on post #{post.identifier}."
+        end
       end
 
     end
 
   end
 
+  def generate_comment(results, shorten_posts = false)
+
+    comment = ""
+
+    if results['confession']
+      comment << "\nThe following confessions were referenced in this post:\n=="
+      results['confession'].each do |r|
+        # skip displaying of posts if this is a long comment. probably should
+        # recursively hide posts until total length is short enough instead of
+        # using a hard character limit.
+        if shorten_posts && r[:content].length > MAX_POST_LENGTH
+          r[:content] = "Post too long to display. Please use below links."
+        end
+        comment << "\n\##{r[:tag]}: #{r[:content]}\n-- Original link: #{r[:link]}\n-- Facebook link: #{r[:fb_link]}\n"
+      end
+      comment << "\n"
+    end
+
+    if results['tag']
+      comment << "\nThe following tags were found in this post:\n=="
+      results['tag'].each do |r|
+        comment << "\n\##{r[:tag]}: #{r[:link]}"
+      end
+      comment << "\n==\n"
+    end
+
+    if comment.length > MAX_COMMENT_LENGTH
+      generate_comment(results, true)
+    else
+      comment
+    end
+
+  end
+
+  public
 
   def run
     last_ran_timestamp = redis.get(REDIS_KEY) || (Time.now - 1.month).to_i
