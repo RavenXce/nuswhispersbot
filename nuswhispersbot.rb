@@ -5,10 +5,11 @@ require 'json'
 
 class NusWhispersBot
 
+  REDIS_KEY = ENV['REDIS_KEY'] || 'nwb_last_ran_timestamp'
   ACCESS_TOKEN  = ENV['PAGE_ACCESS_TOKEN']
+  MAX_FETCH = ENV['MAX_FETCH'] || 250
   HASHTAG_REGEX = /#[[:alnum:]_]+/
   NUMERIC_TAG_REGEX = /\d+$/
-  MAX_FETCH = 250
 
   def redis
     @_redis ||= Redis.new
@@ -24,7 +25,7 @@ class NusWhispersBot
 
   def parse_post(post)
 
-    content, footer = post.split(/\n-\n #/)
+    content, footer = post.message.split(/\n-\n #/)
 
     if content && footer
       hashtags = content.scan(HASHTAG_REGEX)
@@ -57,24 +58,25 @@ class NusWhispersBot
 
       results = results.group_by { |x| x[:type] }
 
-      post = ""
+      comment = ""
       if results['confession']
-        post << "\nThe following confessions were referenced in this post:\n=="
+        comment << "\nThe following confessions were referenced in this post:\n=="
         results['confession'].each do |r|
-          post << "\n\##{r[:tag]}: #{r[:content]}\n-- Original link: #{r[:link]}\n"
+          comment << "\n\##{r[:tag]}: #{r[:content]}\n-- Original link: #{r[:link]}\n"
         end
-        post << "\n"
+        comment << "\n"
       end
       if results['tag']
-        post << "\nThe following tags were found in this post:\n=="
+        comment << "\nThe following tags were found in this post:\n=="
         results['tag'].each do |r|
-          post << "\n\##{r[:tag]}: #{r[:link]}"
+          comment << "\n\##{r[:tag]}: #{r[:link]}"
         end
-        post << "\n==\n"
+        comment << "\n==\n"
       end
-      unless post.empty?
-        post << "For queries, complains, bug reports: nuswhispersbot@gmail.com"
-        bot_page.posts.first.comment!(message: post)
+      unless comment.empty?
+        comment << "For queries, complains, bug reports: nuswhispersbot@gmail.com"
+        post.comment!(message: comment)
+        puts "Commented on post #{post.identifier}."
       end
 
     end
@@ -83,15 +85,16 @@ class NusWhispersBot
 
 
   def run
-    last_ran_timestamp = redis.get('nwb_last_ran_timestamp') || (Time.now - 1.month).to_i
+    last_ran_timestamp = redis.get(REDIS_KEY) || (Time.now - 1.month).to_i
+    current_timestamp = Time.now.utc.to_i
     posts = whispers_page.posts(limit: MAX_FETCH, since: last_ran_timestamp)
 
     puts "Parsing #{posts.count} posts from #{last_ran_timestamp}.."
     posts.each do |post|
-      parse_post(post.message)
+      parse_post(post)
     end
   ensure
-    redis.set('nwb_last_ran_timestamp', Time.now.utc.to_i)
+    redis.set(REDIS_KEY, current_timestamp)
   end
 
 end
