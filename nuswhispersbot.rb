@@ -69,7 +69,7 @@ class NusWhispersBot
       if results['confession']
         comment << "\nThe following confessions were referenced in this post:\n=="
         results['confession'].each do |r|
-          comment << "\n\##{r[:tag]}: #{r[:content]}\n-- Facebook link: #{r[:fb_link]}\n-- Original link: #{r[:link]}\n"
+          comment << "\n\##{r[:tag]}: #{r[:content]}\n-- Original link: #{r[:link]}\n-- Facebook link: #{r[:fb_link]}\n"
         end
         comment << "\n"
       end
