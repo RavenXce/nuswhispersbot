@@ -8,7 +8,6 @@ class NusWhispersBot
   REDIS_KEY = ENV['REDIS_KEY'] || 'nwb_last_ran_timestamp'
   ACCESS_TOKEN  = ENV['PAGE_ACCESS_TOKEN']
   MAX_FETCH = ENV['MAX_FETCH'] || 250
-  MAX_POST_LENGTH = ENV['MAX_POST_LENGTH'] || 1000
   MAX_COMMENT_LENGTH = 8000
   HASHTAG_REGEX = /#[[:alnum:]_]+/
   NUMERIC_TAG_REGEX = /\d+$/
@@ -87,17 +86,14 @@ class NusWhispersBot
 
   end
 
-  def generate_comment(results, shorten_posts = false)
+  def generate_comment(results, max_post_length = MAX_COMMENT_LENGTH)
 
     comment = ""
 
     if results['confession']
       comment << "\nThe following confessions were referenced in this post:\n=="
       results['confession'].each do |r|
-        # skip displaying of posts if this is a long comment. probably should
-        # recursively hide posts until total length is short enough instead of
-        # using a hard character limit.
-        if shorten_posts && r[:content].length > MAX_POST_LENGTH
+        if r[:content].length > max_post_length
           r[:content] = "Post too long to display. Please use below links."
         end
         comment << "\n\##{r[:tag]}: #{r[:content]}\n-- Original link: #{r[:link]}\n-- Facebook link: #{r[:fb_link]}\n"
@@ -113,8 +109,9 @@ class NusWhispersBot
       comment << "\n==\n"
     end
 
-    if comment.length > MAX_COMMENT_LENGTH
-      generate_comment(results, true)
+    if comment.length > MAX_COMMENT_LENGTH && max_post_length > 0
+      # recursively reduce allowed post length
+      generate_comment(results, max_post_length - 800)
     else
       comment
     end
