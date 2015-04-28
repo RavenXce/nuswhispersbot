@@ -43,7 +43,12 @@ class NusWhispersBot
               if json['success'] == false
                 { type: 'tag', tag: tag, link: "http://nuswhispers.com/tag/#{tag}" }
               elsif json['success'] == true
-                { type: 'confession', tag: tag, link: "http://nuswhispers.com/confessions/#{tag}", content: json['data']['confession']['content'] }
+                {
+                  type: 'confession', tag: tag,
+                  link: "http://nuswhispers.com/confession/#{tag}",
+                  fb_link:"https://www.facebook.com/nuswhispers/posts/#{json['data']['confession']['fb_post_id']}",
+                  content: json['data']['confession']['content']
+                }
               else
                 { type: 'invalid', reason: 'Could not find success code.' }
               end
@@ -64,7 +69,7 @@ class NusWhispersBot
       if results['confession']
         comment << "\nThe following confessions were referenced in this post:\n=="
         results['confession'].each do |r|
-          comment << "\n\##{r[:tag]}: #{r[:content]}\n-- Original link: #{r[:link]}\n"
+          comment << "\n\##{r[:tag]}: #{r[:content]}\n-- Facebook link: #{r[:fb_link]}\n-- Original link: #{r[:link]}\n"
         end
         comment << "\n"
       end
@@ -96,7 +101,7 @@ class NusWhispersBot
     posts.each do |post|
       parse_post(post)
     end
-    
+
     redis.set(REDIS_KEY, current_timestamp)
   end
 
