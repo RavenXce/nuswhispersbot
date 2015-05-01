@@ -30,7 +30,7 @@ class NusWhispersBot
 
     return if redis.get("nwb_commented_#{post.identifier}")
 
-    content, footer = post.message.split(/\n-\n #/)
+    content, footer = post.message.split(/\n-\n#/)
 
     if content && footer
       hashtags = content.scan(HASHTAG_REGEX)
@@ -123,7 +123,7 @@ class NusWhispersBot
   def run
     last_ran_timestamp = redis.get(REDIS_KEY) || (Time.now - 1.month).to_i
     current_timestamp = Time.now.utc.to_i
-    posts = whispers_page.posts(limit: MAX_FETCH, since: last_ran_timestamp)
+    posts = whispers_page.feed(limit: MAX_FETCH, since: last_ran_timestamp)
 
     puts "Parsing #{posts.count} posts from #{last_ran_timestamp}.."
     posts.each do |post|
