@@ -41,14 +41,14 @@ class NusWhispersBot
         if tag.match(NUMERIC_TAG_REGEX)
 
           begin
-            open("http://nuswhispers.com/api/confessions/#{tag}") do |f|
+            open("https://nuswhispers.com/api/confessions/#{tag}") do |f|
               json = JSON.parse(f.read)
               if json['success'] == false
-                { type: 'tag', tag: tag, link: "http://nuswhispers.com/tag/#{tag}" }
+                { type: 'tag', tag: tag, link: "https://nuswhispers.com/tag/#{tag}" }
               elsif json['success'] == true
                 {
                   type: 'confession', tag: tag,
-                  link: "http://nuswhispers.com/confession/#{tag}",
+                  link: "https://nuswhispers.com/confession/#{tag}",
                   fb_link:"https://www.facebook.com/nuswhispers/posts/#{json['data']['confession']['fb_post_id']}",
                   content: json['data']['confession']['content']
                 }
@@ -61,7 +61,7 @@ class NusWhispersBot
           end
 
         else
-          { type: 'tag', tag: tag, link: "http://nuswhispers.com/tag/#{tag}" }
+          { type: 'tag', tag: tag, link: "https://nuswhispers.com/tag/#{tag}" }
         end
 
       end
