@@ -71,7 +71,7 @@ class NusWhispersBot
       comment = generate_comment(results)
 
       unless comment.empty?
-        comment << "For queries, complains, bug reports: nuswhispersbot@gmail.com"
+        comment << "For queries, complains, bug reports: https://www.facebook.com/nuswhispersbot"
         begin
           fb_comment = post.comment!(message: comment)
         rescue FbGraph::Unauthorized => e
