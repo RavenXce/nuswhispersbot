@@ -6,7 +6,7 @@ require 'json'
 class NusWhispersBot
 
   REDIS_KEY = ENV['REDIS_KEY'] || 'nwb_last_ran_timestamp'
-  ACCESS_TOKEN  = ENV['PAGE_ACCESS_TOKEN']
+  ACCESS_TOKEN = ENV['PAGE_ACCESS_TOKEN']
   MAX_FETCH = ENV['MAX_FETCH'] || 250
   MAX_COMMENT_LENGTH = 8000
   HASHTAG_REGEX = /#[[:alnum:]_]+/
@@ -71,7 +71,6 @@ class NusWhispersBot
       comment = generate_comment(results)
 
       unless comment.empty?
-        comment << "For queries, complains, bug reports: https://www.facebook.com/nuswhispersbot"
         begin
           fb_comment = post.comment!(message: comment)
         rescue FbGraph::Unauthorized => e
@@ -96,7 +95,7 @@ class NusWhispersBot
         if r[:content].length > max_post_length
           r[:content] = "Post too long to display. Please use below links."
         end
-        comment << "\n\##{r[:tag]}: #{r[:content]}\n-- Original link: #{r[:link]}\n-- Facebook link: #{r[:fb_link]}\n"
+        comment << "\n\##{r[:tag]}: #{r[:content]}\n"
       end
       comment << "\n"
     end
@@ -104,7 +103,7 @@ class NusWhispersBot
     if results['tag']
       comment << "\nThe following tags were found in this post:\n=="
       results['tag'].each do |r|
-        comment << "\n\##{r[:tag]}: #{r[:link]}"
+        comment << "\n\##{r[:tag]}"
       end
       comment << "\n==\n"
     end
