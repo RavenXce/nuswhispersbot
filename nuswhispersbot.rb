@@ -73,12 +73,12 @@ class NusWhispersBot
       unless comment.empty?
         comment << "For queries, complains, bug reports: nuswhispersbot@gmail.com"
         begin
-          post.comment!(message: comment)
+          fb_comment = post.comment!(message: comment)
         rescue FbGraph::Unauthorized => e
           puts "Failed to comment on post #{post.identifier}. Comment probably too long: #{comment.length}."
         else
           redis.set("nwb_commented_#{post.identifier}", Time.now.utc.to_i)
-          puts "Commented on post #{post.identifier}."
+          puts "Commented on post #{post.identifier} with comment #{fb_comment.identifier}."
         end
       end
 
