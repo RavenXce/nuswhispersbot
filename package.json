@@ -1,0 +1,27 @@
+{
+  "name": "nuswhispersbot",
+  "version": "1.0.0",
+  "description": "Bot for NUSWhispers",
+  "main": "index.js",
+  "dependencies": {
+    "async": "^2.0.0",
+    "aws-sdk": "^2.4.7",
+    "fbgraph": "^1.2.0",
+    "request": "^2.73.0",
+    "underscore": "^1.8.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ravenxce/nuswhispersbot.git"
+  },
+  "author": "Ivan Poon",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ravenxce/nuswhispersbot/issues"
+  },
+  "homepage": "https://github.com/ravenxce/nuswhispersbot#readme"
+}
