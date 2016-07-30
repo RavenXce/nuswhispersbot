@@ -113,7 +113,7 @@ function checkTag(tag, callback) {
       }
     });
   } else {
-    callback(null, { type: 'tag', tag: tag, link: "https://nuswhispers.com/tag/${tag}" });
+    callback(null, { type: 'tag', tag: tag, link: `https://nuswhispers.com/tag/${tag}` });
   }
 }
 
