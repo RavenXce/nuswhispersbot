@@ -25,9 +25,12 @@ String.prototype.scan = function (re) {
 exports.handler = (event, context, callback) => {
   // console.log('Received event:', JSON.stringify(event, null, 2));
 
-  // Load credentials and metadata from s3
+  // Load credentials from environment
+  let fb_access_token = process.env.FB_ACCESS_TOKEN;
+
+  // Load metadata from s3
   let s3 = new aws.S3({ apiVersion: '2006-03-01', params: { Bucket: 'nuswhispersbot' } });
-  let s3_objects = [{ Key: 'fb_access_token' }, { Key: 'last_ran_timestamp' }];
+  let s3_objects = [{ Key: 'last_ran_timestamp' }];
 
   async.map(s3_objects, s3.getObject.bind(s3), (err, data) => {
     if (err) {
@@ -35,8 +38,7 @@ exports.handler = (event, context, callback) => {
       callback(`Error loading data from S3: ${err}`);
       return;
     }
-
-    let fb_access_token = data[0].Body.toString().trim();
+    
     let last_ran_timestamp = parseInt(data[1].Body.toString().trim());
     let timestamp_now = Math.floor(Date.now() / 1000);
 
