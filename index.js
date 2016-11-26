@@ -38,8 +38,8 @@ exports.handler = (event, context, callback) => {
       callback(`Error loading data from S3: ${err}`);
       return;
     }
-    
-    let last_ran_timestamp = parseInt(data[1].Body.toString().trim());
+
+    let last_ran_timestamp = parseInt(data[0].Body.toString().trim());
     let timestamp_now = Math.floor(Date.now() / 1000);
 
     // get latest posts
@@ -51,21 +51,25 @@ exports.handler = (event, context, callback) => {
         return;
       }
 
+      // update the timestamp first
+      s3.upload({ Key: 'last_ran_timestamp', Body: String(timestamp_now) }, (err) => {
+        if (err) {
+          console.error(err);
+          callback(`Error updating timestamp: ${err}`);
+          return;
+        }
+      });
+
       // parse & comment on posts
       let posts = res.data;
       console.info(`Parsing ${posts.length} posts from ${last_ran_timestamp}`);
       async.each(posts, parseAndCommentOnPost, (err, res) => {
-        if (err) console.error(err);
-
-        // (always) update timestamp
-        s3.upload({ Key: 'last_ran_timestamp', Body: String(timestamp_now) }, (err) => {
-          if (err) {
-            console.error(err);
-            callback(`Error updating timestamp: ${err}`);
-          } else {
-            callback(null, `Done comment function at: ${timestamp_now}`);
-          }
-        });
+        if (err) {
+          console.error(err);
+          callback(`Error posting comments: ${err}`);
+        } else {
+          callback(null, `Done comment function at: ${timestamp_now}`);
+        }
       });
     });
   });
