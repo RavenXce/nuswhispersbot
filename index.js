@@ -9,7 +9,7 @@ let _ = require('underscore');
 
 let MAX_FETCH = 100;
 let MAX_COMMENT_LENGTH = 8000;
-let COMMENT_LENGTH_BACKOFF = 1600;
+let COMMENT_LENGTH_BACKOFF = 800;
 let HASHTAG_REGEX = /#\w+/g;
 let NUMERIC_TAG_REGEX = /\d+$/g;
 
@@ -89,18 +89,18 @@ function parseAndCommentOnPost(post, callback) {
     // note: limit to checking 3 tags at once to prevent spamming nuswhispers.com
     async.mapLimit(hashtags, 3, checkTag, (error, results) => {
       results = _.groupBy(results, 'type');
-      var comment = generateComment(results);
+      let comment = generateComment(results);
       if (comment.length > 0) {
         comment += "For queries, complains, bug reports: nuswhispersbot@gmail.com";
         // comment!
         console.info(`Commenting on post: ${post.id}`);
         graph.post(`${post.id}/comments`, { message: comment }, callback);
       } else {
-        callback(null);
+        callback();
       }
     });
-  } catch (e) {
-    callback(e)
+  } catch (err) {
+    callback(err);
   }
 }
 
@@ -131,12 +131,12 @@ function checkTag(tag, callback) {
 function generateComment(results, max_post_length) {
   if (!max_post_length) max_post_length = MAX_COMMENT_LENGTH;
 
-  var comment = "";
+  let comment = "";
 
   if (results.confession) {
     comment += "\nThe following confessions were referenced in this post:\n==";
     results.confession.forEach((r) => {
-      if (r.content > max_post_length) {
+      if (r.content.length > max_post_length) {
         r.content = "Post too long to display. Please use below links.";
       }
       comment += `\n\#${r.tag}: ${r.content}\n-- Original link: ${r.link}\n-- Facebook link: ${r.fb_link}\n`;
