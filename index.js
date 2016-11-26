@@ -63,7 +63,7 @@ exports.handler = (event, context, callback) => {
       // parse & comment on posts
       let posts = res.data;
       console.info(`Parsing ${posts.length} posts from ${last_ran_timestamp}`);
-      async.each(posts, parseAndCommentOnPost, (err, res) => {
+      async.each(posts, parseAndCommentOnPost, (err) => {
         if (err) {
           console.error(err);
           callback(`Error posting comments: ${err}`);
@@ -76,27 +76,31 @@ exports.handler = (event, context, callback) => {
 }
 
 function parseAndCommentOnPost(post, callback) {
-  let post_parts = post.message.split(/\n-\n#/)
-  if (post_parts.length != 2) return;
+  try {
+    let post_parts = post.message.split(/\n-\n#/)
+    if (post_parts.length != 2) return;
 
-  let content = post_parts[0];
-  let hashtags = _.unique(content.scan(HASHTAG_REGEX));
+    let content = post_parts[0];
+    let hashtags = _.unique(content.scan(HASHTAG_REGEX));
 
-  if (hashtags.length > 0) console.info(`Found hashtags: ${hashtags}`);
+    if (hashtags.length > 0) console.info(`Found hashtags: ${hashtags}`);
 
-  // note: limit to checking 3 tags at once to prevent spamming nuswhispers.com
-  async.mapLimit(hashtags, 3, checkTag, (error, results) => {
-    results = _.groupBy(results, 'type');
-    var comment = generateComment(results);
-    if (comment.length > 0) {
-      comment += "For queries, complains, bug reports: nuswhispersbot@gmail.com";
-      // comment!
-      console.info(`Commenting on post: ${post.id}`);
-      graph.post(`${post.id}/comments`, { message: comment }, callback);
-    } else {
-      callback(null, null);
-    }
-  })
+    // note: limit to checking 3 tags at once to prevent spamming nuswhispers.com
+    async.mapLimit(hashtags, 3, checkTag, (error, results) => {
+      results = _.groupBy(results, 'type');
+      var comment = generateComment(results);
+      if (comment.length > 0) {
+        comment += "For queries, complains, bug reports: nuswhispersbot@gmail.com";
+        // comment!
+        console.info(`Commenting on post: ${post.id}`);
+        graph.post(`${post.id}/comments`, { message: comment }, callback);
+      } else {
+        callback(null);
+      }
+    });
+  } catch (e) {
+    callback(e)
+  }
 }
 
 function checkTag(tag, callback) {
