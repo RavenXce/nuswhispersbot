@@ -9,6 +9,7 @@ let _ = require('underscore');
 
 let MAX_FETCH = 100;
 let MAX_COMMENT_LENGTH = 8000;
+let COMMENT_LENGTH_BACKOFF = 1600;
 let HASHTAG_REGEX = /#\w+/g;
 let NUMERIC_TAG_REGEX = /\d+$/g;
 
@@ -153,7 +154,7 @@ function generateComment(results, max_post_length) {
 
   if (comment.length > MAX_COMMENT_LENGTH && max_post_length > 0) {
     // recursively reduce allowed post length. TODO: split into multiple comments instead
-    return generateComment(results, max_post_length - 800);
+    return generateComment(results, max_post_length - COMMENT_LENGTH_BACKOFF);
   } else {
     return comment;
   }
